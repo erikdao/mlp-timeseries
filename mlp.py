@@ -1,6 +1,8 @@
 """
 Multilayer perceptron
 """
+from collections import OrderedDict
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,15 +10,21 @@ import pytorch_lightning as pl
 
 
 class MLP(pl.LightningModule):
-    def __init__(self):
+    def __init__(self, hidden_params=None):
         super().__init__()
-        self.layers = nn.Sequential(
-            nn.Linear(5, 4, bias=True),
-            nn.Sigmoid(),
-            nn.Linear(4, 4, bias=True),
-            nn.Sigmoid()
-        )
-        self.output = nn.Linear(4, 1, bias=True)
+
+        layers = OrderedDict()
+        for idx, params in enumerate(hidden_params):
+            linear_name = f'linear_{idx+1}'
+            layers[linear_name] = nn.Linear(*params, bias=True)
+            sigmoid_name = f'sigmoid_{idx+1}'
+            layers[sigmoid_name] = nn.Sigmoid()
+
+        self.layers = nn.Sequential(layers)
+
+        # Get the last dim of last hidden layer
+        last_dim = hidden_params[-1][-1]
+        self.output = nn.Linear(last_dim, 1, bias=True)
 
         # Initialize weights
         for m in self.modules():

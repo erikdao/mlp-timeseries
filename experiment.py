@@ -14,11 +14,16 @@ from plotting import plot_dataset, plot_series
 np.random.seed(1)
 
 
+def grid_search_network():
+    pass
+
+
 def run_experiment():
     pl.seed_everything(1)
     train_loader, val_loader, test_loader = create_pytorch_data()
 
-    model = MLP()
+    hidden_params = [(5, 4), (4, 4)]
+    model = MLP(hidden_params=hidden_params)
     print(model)
 
     trainer = pl.Trainer(max_epochs=200)
