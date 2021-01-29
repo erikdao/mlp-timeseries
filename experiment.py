@@ -121,9 +121,40 @@ def regularization_noise_search():
                 json.dump(gs_results, f)
 
 
+def regularization_weights():
+    global config
+    config = Config(**{
+        'task_name': 'reg_weights',
+        'learning_rate': 0.1,
+        'regularizer': 'L2',
+        'momentum': 0.9,
+        'epochs': 1000,
+        'early_stopping': False,
+        'hidden_params': [(5, 4), (4, 5)]
+    })
+    lambdas = [0.1, 0.01, 0.001, 0.0001, 1e-5]
+    sigmas = [0.05, 0.1, 0.15]
+
+    for la in lambdas:
+        for sigma in sigmas:
+            setattr(config, 'experiment_name', f'lambda_{la}_sigma{sigma}')
+            setattr(config, 'lambda', la)
+            setattr(config, 'sigma', sigma)
+
+            create_exp_dir(
+                task_name=getattr(config, 'task_name'),
+                experiment_name=getattr(config, 'experiment_name')
+            )
+            losses = run_experiment(config)
+
+
 def run_experiment(config: Config):
+    # Dirty, but who's care
+    inspect_weights = 'weights' in getattr(config, 'task_name', '')
+
     # 1. Create the model
     model = MLP(hidden_params=config.hidden_params, configs=config)
+    if inspect_weights:
 
     # 2. Load the datasets
     train_loader, val_loader, test_loader = create_pytorch_data()

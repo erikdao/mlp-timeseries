@@ -60,7 +60,6 @@ class MLP(pl.LightningModule):
         predictions = self.forward(inputs)
         loss = F.mse_loss(predictions, labels)
         if self.configs.regularizer:
-            # print('has regularizer')
             loss = loss * self.get_regularization(self.configs.regularizer, getattr(self.configs, 'lambda'))
         self.log('train_loss', loss, on_step=False, on_epoch=True)
         return loss
@@ -83,3 +82,17 @@ class MLP(pl.LightningModule):
         predictions = self.forward(inputs)
         return predictions.detach().numpy()
 
+    def get_weights(self, to_numpy=True):
+        weights = torch.Tensor()
+        for name, parameter in self.named_parameters():
+            if 'weight' in name:
+                weights = torch.cat((weights, parameter.view(-1)), 0)
+        if to_numpy:
+            weights = weights.detach().numpy()
+        return weights
+
+
+if __name__ == '__main__':
+    model = MLP(hidden_params=[(5, 4), (4, 5)])
+    init_weights = model.get_weights()
+    assert len(init_weights) == 5 * 4 + 4 * 5 + 5
