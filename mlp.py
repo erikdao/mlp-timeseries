@@ -2,6 +2,7 @@
 Multilayer perceptron
 """
 from collections import OrderedDict
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -10,8 +11,9 @@ import pytorch_lightning as pl
 
 
 class MLP(pl.LightningModule):
-    def __init__(self, hidden_params=None):
+    def __init__(self, hidden_params=None, configs=None):
         super().__init__()
+        self.configs = configs
 
         layers = OrderedDict()
         for idx, params in enumerate(hidden_params):
@@ -31,20 +33,35 @@ class MLP(pl.LightningModule):
             if type(m) == nn.Linear:
                 torch.nn.init.normal_(m.weight)
                 if m.bias is not None:
-                    m.bias.data.fill_(1)
+                    m.bias.data.fill_(1.0)
 
     def forward(self, x):
         h = self.layers(x)
         return self.output(h)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.SGD(self.parameters(), lr=0.1, momentum=0.9)
+        optimizer = torch.optim.SGD(
+            self.parameters(), lr=self.configs.learning_rate, momentum=self.configs.momentum)
         return optimizer
+
+    def get_regularization(self, regularizer='L2', strength=0.1):
+        reg = torch.Tensor([0])
+        for params in self.parameters():
+            if regularizer == 'L1':
+                reg += torch.norm(params, 1)
+            elif regularizer == 'L2':
+                reg += torch.norm(params, 2)
+        return reg * strength
 
     def training_step(self, train_batch, train_idx):
         inputs, labels = train_batch
+        if self.configs.sigma:  # Add noise to the data
+            inputs += np.random.normal(0, self.configs.sigma)
         predictions = self.forward(inputs)
         loss = F.mse_loss(predictions, labels)
+        if self.configs.regularizer:
+            # print('has regularizer')
+            loss = loss * self.get_regularization(self.configs.regularizer, getattr(self.configs, 'lambda'))
         self.log('train_loss', loss, on_step=False, on_epoch=True)
         return loss
 

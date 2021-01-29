@@ -29,6 +29,7 @@ class Config(object):
         'experiment_name',
         'hidden_params',  # For MLP
         'learning_rate',  # For optimizer
+        'momentum',
         'regularizer',
         'lambda',  # Regularizer strength
         'epochs',
@@ -59,14 +60,13 @@ def grid_search_network():
     global config
     config = Config(**{
         'task_name': 'grid_search',
-        'learning_rate': 0.01,
-        'regularizer': 'l2',
-        'lambda': 0.0001,
+        'learning_rate': 0.1,
+        'momentum': 0.9,
         'epochs': 1000,
         'early_stopping': True,
     })
-    nh1 = [2, 3, 4, 5, 6, 9]
-    nh2 = [2, 3, 4, 5, 6, 9]
+    nh1 = [2, 3, 4, 5, 6]
+    nh2 = [2, 3, 4, 5, 6]
     hidden_params = []
     for n1 in nh1:
         for n2 in nh2:
@@ -88,9 +88,42 @@ def grid_search_network():
             json.dump(grid_search_result, f)
 
 
+def regularization_noise_search():
+    global config
+    config = Config(**{
+        'task_name': 'reg_noise',
+        'learning_rate': 0.1,
+        'regularizer': 'L2',
+        'momentum': 0.9,
+        'lambda': 0.01,
+        'epochs': 1000,
+        'early_stopping': False,
+    })
+    nh1 = 4  # Best value from grid_search_network()
+    nh2 = [3, 5, 6, 9]
+    sigma = [0.05, 0.15]
+
+    gs_results = []
+    for n2 in nh2:
+        for s in sigma:
+            setattr(config, 'hidden_params', [(5, nh1), (nh1, n2)])
+            setattr(config, 'sigma', s)
+            setattr(config, 'experiment_name', f'h{n2}_s{s}')
+            create_exp_dir(
+                task_name=getattr(config, 'task_name'),
+                experiment_name=getattr(config, 'experiment_name')
+            )
+            losses = run_experiment(config)
+
+            gs_results.append({'nh2': n2, 'sigma': s, **losses})
+            summary_path = os.path.join('checkpoints', config.task_name, 'reg_noise_summary.json')
+            with open(summary_path, 'w') as f:
+                json.dump(gs_results, f)
+
+
 def run_experiment(config: Config):
     # 1. Create the model
-    model = MLP(hidden_params=config.hidden_params)
+    model = MLP(hidden_params=config.hidden_params, configs=config)
 
     # 2. Load the datasets
     train_loader, val_loader, test_loader = create_pytorch_data()
@@ -119,7 +152,7 @@ def run_experiment(config: Config):
         predictions = model.predict(patterns)
         t = np.arange(1201, 1401)
         plot_series(
-            t, [(predictions, 'Predictions'), (targets, 'Groundtruth')],
+            t, [(targets, 'Groundtruth'), (predictions, 'Predictions')],
             title='Predictions on Test Data',
             filename=os.path.join(ckpt_dir, 'test_predictions.pdf'))
 
@@ -140,4 +173,5 @@ def run_experiment(config: Config):
 
 
 if __name__ == '__main__':
-    grid_search_network()
+    # grid_search_network()
+    regularization_noise_search()
