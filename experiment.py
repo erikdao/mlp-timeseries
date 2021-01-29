@@ -13,8 +13,8 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
-from data import create_pytorch_data
 from mlp import MLP
+from data import create_pytorch_data, create_dataset
 from plotting import plot_dataset, plot_series
 
 np.random.seed(42)
@@ -224,6 +224,10 @@ def run_experiment(config: Config):
 
 
 if __name__ == '__main__':
-    # grid_search_network()
+    grid_search_network()
     # regularization_noise_search()
-    regularization_weights()
+    # regularization_weights()
+
+    # (X_train, y_train), (X_val, y_val), (X_test, y_test) = create_dataset()
+    # t = np.arange(301, 1501)
+    # plot_dataset(t, y_train, y_val, y_test, filename='./checkpoints/mackey_glass.pdf')
