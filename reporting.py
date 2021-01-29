@@ -1,6 +1,8 @@
 """
 This file produces result for reporting
 """
+import os
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -69,6 +71,55 @@ def reg_noise(
     fig.savefig(graph_filename, bbox_inches='tight')
 
 
+def reg_weights(
+    base_dir='./checkpoints/reg_weights/',
+    init_name='init_weights.npy',
+    learned_name='learned_weights.npy',
+):
+    df = pd.read_json(os.path.join(base_dir, 'reg_weights_summary.json'))
+
+    s1 = df[df['sigma'] == 0.05]
+    s2 = df[df['sigma'] == 0.1]
+    s3 = df[df['sigma'] == 0.15]
+    x = np.arange(len(s1['lamb_da']))
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.set_xlabel("Regularization $\lambda$", fontsize=12)
+    ax.set_ylabel('Losses', fontsize=12)
+    ax.set_title('Val/Test losses w.r.t $\lambda')
+
+    plt.plot(x, s1[['val_loss']], label="val_loss - $\sigma = 0.05$", marker='o', linestyle='--', linewidth=2., color='b')
+    plt.plot(x, s1[['test_loss']], label="test_loss - $\sigma = 0.05$", marker='o', linewidth=2., color='b')
+    plt.plot(x, s2[['val_loss']], label="val_loss - $\sigma = 0.1$", marker='o', linestyle='--', linewidth=2., color='r')
+    plt.plot(x, s2[['test_loss']], label="test_loss - $\sigma = 0.1$", marker='o', linewidth=2., color='r')
+    plt.plot(x, s3[['val_loss']], label="val_loss - $\sigma = 0.15$", marker='o', linestyle='--', linewidth=2.,
+             color='g')
+    plt.plot(x, s3[['test_loss']], label="test_loss - $\sigma = 0.15$", marker='o', linestyle='-.', linewidth=2.,
+             color='g')
+    plt.xticks(x, [0.1, 0.01, 0.001, 0.0001, 1e-5])
+    plt.legend()
+    plt.setp(ax.spines.values(), color='#374151')
+    plt.show()
+
+    exp_dirs = [x[0] for x in os.walk(base_dir) if 'lambda' in x[0]]
+
+    names = [f'./checkpoints/reg_weights/lambda_{x}_sigma0.15' for x in [0.1, 0.01, 0.001, 0.0001]]
+    fig, ax = plt.subplots(figsize=(7, 5))
+    ax.set_title("Distribution of Learned Weights $\sigma = 0.15$", fontsize=18, pad=12)
+    ax.set_xlabel("Values", fontsize=13)
+    ax.set_ylabel("Density", fontsize=13)
+    for exp in exp_dirs:
+        # if exp.endswith('sigma0.1'):
+        if exp in names:
+            ld = exp.split('_')[2]
+            fn = os.path.join(exp, 'learned_weights.npy')
+            if os.path.exists(fn):
+                weights = np.load(fn)
+                sns.distplot(weights, hist=False, kde=True, label=f"$\lambda$ = {ld}")
+    plt.setp(ax.spines.values(), color='#374151')
+    plt.legend()
+    plt.show()
+
 if __name__ == '__main__':
     # grid_search()
-    reg_noise()
+    # reg_noise()
+    reg_weights()

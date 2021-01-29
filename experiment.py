@@ -134,7 +134,10 @@ def regularization_weights():
     })
     lambdas = [0.1, 0.01, 0.001, 0.0001, 1e-5]
     sigmas = [0.05, 0.1, 0.15]
+    # lambdas = [0.1]
+    # sigmas = [0.05]
 
+    gs_results = []
     for la in lambdas:
         for sigma in sigmas:
             setattr(config, 'experiment_name', f'lambda_{la}_sigma{sigma}')
@@ -147,20 +150,30 @@ def regularization_weights():
             )
             losses = run_experiment(config)
 
+            gs_results.append({'lamb_da': la, 'sigma': sigma, **losses})
+            summary_path = os.path.join('checkpoints', config.task_name, 'reg_weights_summary.json')
+            with open(summary_path, 'w') as f:
+                json.dump(gs_results, f)
+
 
 def run_experiment(config: Config):
+    ckpt_dir = os.path.join('checkpoints', config.task_name, config.experiment_name)
+
     # Dirty, but who's care
     inspect_weights = 'weights' in getattr(config, 'task_name', '')
 
     # 1. Create the model
     model = MLP(hidden_params=config.hidden_params, configs=config)
     if inspect_weights:
+        init_weights = model.get_weights()
+        fn = os.path.join(ckpt_dir, 'init_weights.npy')
+        with open(fn, 'wb') as f:
+            np.save(f, init_weights)
 
     # 2. Load the datasets
     train_loader, val_loader, test_loader = create_pytorch_data()
 
     # 3. Setup checkpoint params
-    ckpt_dir = os.path.join('checkpoints', config.task_name, config.experiment_name)
     checkpoint_cb = ModelCheckpoint(dirpath=ckpt_dir, monitor='val_loss', mode='min')
 
     # 4. Setup training callback
@@ -172,6 +185,13 @@ def run_experiment(config: Config):
 
     # 5. Run the training
     trainer.fit(model, train_dataloader=train_loader, val_dataloaders=val_loader)
+
+    if inspect_weights:
+        init_weights = model.get_weights()
+        fn = os.path.join(ckpt_dir, 'learned_weights.npy')
+        with open(fn, 'wb') as f:
+            np.save(f, init_weights)
+
     test_loss = trainer.test(model, test_loader)
 
     # 6. Plot prediction on dataset
@@ -205,4 +225,5 @@ def run_experiment(config: Config):
 
 if __name__ == '__main__':
     # grid_search_network()
-    regularization_noise_search()
+    # regularization_noise_search()
+    regularization_weights()
