@@ -47,4 +47,5 @@ cython_debug/
 .DS_Store
 
 # Checkpoints
-checkpoint
+checkpoints
+lightning_logs

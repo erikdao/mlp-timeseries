@@ -72,8 +72,8 @@ def create_pytorch_loader(X, y, batch_size=100, shuffle=True):
 def create_pytorch_data(batch_size=100):
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = create_dataset()
     train_loader = create_pytorch_loader(X_train, y_train, batch_size=batch_size, shuffle=True)
-    val_loader = create_pytorch_loader(X_val, y_val, batch_size=batch_size, shuffle=False)
-    test_loader = create_pytorch_loader(X_test, y_test, batch_size=batch_size, shuffle=False)
+    val_loader = create_pytorch_loader(X_val, y_val, batch_size=batch_size*2, shuffle=False)
+    test_loader = create_pytorch_loader(X_test, y_test, batch_size=batch_size*2, shuffle=False)
 
     return train_loader, val_loader, test_loader
 

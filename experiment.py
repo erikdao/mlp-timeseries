@@ -1,20 +1,43 @@
 """
 Main entry for Experiment
 """
-import numpy as np
+import warnings
+warnings.filterwarnings('ignore')
 
-from data import create_dataset
+import numpy as np
+import pytorch_lightning as pl
+
+from data import create_pytorch_data
+from mlp import MLP
 from plotting import plot_dataset, plot_series
 
 np.random.seed(1)
 
 
 def run_experiment():
-    (X_train, y_train), (X_val, y_val), (X_test, y_test) = create_dataset()
-    t = np.arange(301, 1501)
-    plot_dataset(t, y_train, y_val, y_test, display=True)
-    t = np.arange(1001, 1201)
-    plot_series(t, [(y_val, 'Validation'), (y_test, 'Test')], display=True)
+    pl.seed_everything(1)
+    train_loader, val_loader, test_loader = create_pytorch_data()
+
+    model = MLP()
+    print(model)
+
+    trainer = pl.Trainer(max_epochs=200)
+    trainer.fit(model, train_dataloader=train_loader, val_dataloaders=val_loader)
+    trainer.test(model, test_loader)
+
+    for idx, (patterns, targets) in enumerate(val_loader):
+        if idx > 0:
+            raise ValueError('There should be only a single test batch')
+
+        model.eval()
+        predictions = model.predict(patterns)
+        t = np.arange(1201, 1401)
+        plot_series(
+            t,
+            [(predictions, 'Predictions'), (targets, 'Groundtruth')],
+            title='Predictions on Test Data',
+            display=True,
+            filename='./checkpoints/test_predictions.png')
 
 
 if __name__ == '__main__':
