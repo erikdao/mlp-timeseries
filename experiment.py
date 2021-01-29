@@ -83,9 +83,9 @@ def grid_search_network():
 
         grid_search_result.append({'nh1': n1, 'nh2': n2, **losses})
 
-    summary_path = os.path.join('checkpoints', config.task_name, 'grid_search_summary.json')
-    with open(summary_path, 'w') as f:
-        json.dump(summary_path, f)
+        summary_path = os.path.join('checkpoints', config.task_name, 'grid_search_summary.json')
+        with open(summary_path, 'w') as f:
+            json.dump(grid_search_result, f)
 
 
 def run_experiment(config: Config):
@@ -135,7 +135,7 @@ def run_experiment(config: Config):
 
     return {
         'val_loss': float(checkpoint_cb.best_model_score.numpy()),
-        'test_loss': test_loss['test_loss']
+        'test_loss': test_loss[0]['test_loss']
     }
 
 
