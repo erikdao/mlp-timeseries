@@ -45,21 +45,21 @@ class MLP(pl.LightningModule):
         inputs, labels = train_batch
         predictions = self.forward(inputs)
         loss = F.mse_loss(predictions, labels)
-        self.log('train_loss', loss)
+        self.log('train_loss', loss, on_step=False, on_epoch=True)
         return loss
 
     def validation_step(self, val_batch, val_idx):
         inputs, labels = val_batch
         predictions = self.forward(inputs)
         loss = F.mse_loss(predictions, labels)
-        self.log('val_loss', loss)
+        self.log('val_loss', loss, on_step=False, on_epoch=True)
         return loss
 
     def test_step(self, test_batch, test_idx):
         inputs, labels = test_batch
         predictions = self.forward(inputs)
         loss = F.mse_loss(predictions, labels)
-        self.log('test_loss', loss)
+        self.log('test_loss', loss, on_step=False, on_epoch=True)
         return loss
 
     def predict(self, inputs):
